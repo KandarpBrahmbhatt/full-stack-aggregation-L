@@ -6,7 +6,7 @@ import School from "../models/school.model.js";
 import mongoose from "mongoose";
 import Branch from "../models/branch.model.js";
 import StudentStandard from "../models/studentStandard.model.js";
-
+import Result from "../models/result.model.js";
 export const getSchoolListing = async (req, res) => {
     try {
         const data = await School.aggregate([
@@ -87,8 +87,6 @@ export const getSchoolListing = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
-
-
 
 export const getBranchWiseData = async (req, res) => {
     try {
@@ -186,77 +184,82 @@ export const getBranchWiseData = async (req, res) => {
 };
 
 
-// export const getBranchWiseData = async (req, res) => {
+
+// export const getStudentsWithMarks = async (req, res) => {
 //     try {
-//         const { schoolId } = req.query;
+//         const { schoolName, branchName, standard } = req.query;
 
-//         if (!schoolId) {
-//             return res.status(400).json({
-//                 success: false,
-//                 message: "schoolId is required"
-//             });
-//         }
+//         const data = await Result.aggregate([
 
-//         const data = await Branch.aggregate([
-//             // ✅ Step 1: Filter branches of selected school
-//             {
-//                 $match: {
-//                     schoolId: new mongoose.Types.ObjectId(schoolId)
-//                 }
-//             },
-
-//             // ✅ Step 2: Join StudentStandard (BEST for counting)
+//             // student
 //             {
 //                 $lookup: {
-//                     from: "studentstandards",
-//                     let: { branchId: "$_id" },
-//                     pipeline: [
-//                         {
-//                             $match: {
-//                                 $expr: {
-//                                     $eq: ["$branchId", "$$branchId"]
-//                                 }
-//                             }
-//                         },
-//                         {
-//                             $group: {
-//                                 _id: "$standard",
-//                                 totalStudents: { $sum: 1 }
-//                             }
-//                         }
-//                     ],
-//                     as: "classStats"
+//                     from: "students",
+//                     localField: "studentId",
+//                     foreignField: "_id",
+//                     as: "student"
+//                 }
+//             },
+//             { $unwind: "$student" },
+
+//             // branch
+//             {
+//                 $lookup: {
+//                     from: "branches",
+//                     localField: "student.branchId",
+//                     foreignField: "_id",
+//                     as: "branch"
+//                 }
+//             },
+//             { $unwind: "$branch" },
+
+//             // school
+//             {
+//                 $lookup: {
+//                     from: "schools",
+//                     localField: "student.schoolId",
+//                     foreignField: "_id",
+//                     as: "school"
+//                 }
+//             },
+//             { $unwind: "$school" },
+
+//             // filters
+//             {
+//                 $match: {
+//                     ...(schoolName && {
+//                         "school.name": { $regex: schoolName, $options: "i" }
+//                     }),
+//                     ...(branchName && {
+//                         "branch.name": { $regex: branchName, $options: "i" }
+//                     }),
+//                     ...(standard && { standard: Number(standard) })
 //                 }
 //             },
 
-//             // ✅ Step 3: Format output
 //             {
 //                 $project: {
 //                     _id: 0,
-//                     branchId: "$_id",
-//                     branchName: "$name",
-//                     classStats: 1
+//                     studentName: "$student.name",
+//                     subject: 1,
+//                     marks: 1,
+//                     class: { $concat: ["Class ", { $toString: "$standard" }] },
+//                     branch: "$branch.name",
+//                     school: "$school.name"
 //                 }
-//             }
+//             },
+
+//             { $limit: 100 }
+
 //         ]);
 
-//         res.json({
-//             success: true,
-//             totalBranches: data.length,
-//             data
-//         });
+//         res.json({ success: true, count: data.length, data });
 
-//     } catch (error) {
-//         console.error("Branch Stats Error:", error);
-//         res.status(500).json({
-//             success: false,
-//             message: "Server Error"
-//         });
+//     } catch (err) {
+//         res.status(500).json({ error: err.message });
 //     }
 // };
 
-
-import Result from "../models/result.model.js";
 
 export const getStudentsWithMarks = async (req, res) => {
     try {
@@ -310,15 +313,37 @@ export const getStudentsWithMarks = async (req, res) => {
                 }
             },
 
+            // 🔥 GROUP BY STUDENT (MAIN FIX)
+            {
+                $group: {
+                    _id: "$studentId",
+                    studentName: { $first: "$student.name" },
+                    class: { $first: "$standard" },
+                    branch: { $first: "$branch.name" },
+                    school: { $first: "$school.name" },
+
+                    subjects: {
+                        $push: {
+                            subject: "$subject",
+                            marks: "$marks"
+                        }
+                    },
+
+                    totalMarks: { $sum: "$marks" }
+                }
+            },
+
+            // 🔥 FORMAT
             {
                 $project: {
                     _id: 0,
-                    studentName: "$student.name",
-                    subject: 1,
-                    marks: 1,
-                    class: { $concat: ["Class ", { $toString: "$standard" }] },
-                    branch: "$branch.name",
-                    school: "$school.name"
+                    studentId: "$_id",
+                    studentName: 1,
+                    class: { $concat: ["Class ", { $toString: "$class" }] },
+                    branch: 1,
+                    school: 1,
+                    subjects: 1,
+                    totalMarks: 1
                 }
             },
 

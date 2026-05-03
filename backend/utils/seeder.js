@@ -30,9 +30,9 @@ const seedData = async () => {
 
     // ✅ 2. DIFFERENT BRANCHES PER SCHOOL
     const branchConfig = {
-      "New Noble School": ["Gota", "Bopal"],
-      "Panchtirth School": ["Ranip", "Chandkheda"],
-      "Silver Oak School": ["SG Highway", "Science City"]
+      "New Noble School": ["Gota", "Bopal", "sola"],
+      "Panchtirth School": ["Ranip", "Chandkheda", "Nikol"],
+      "Silver Oak School": ["SG Highway", "Science City", "Naroda"]
     };
 
     const branchData = [];
@@ -70,7 +70,7 @@ const seedData = async () => {
     for (let i = 0; i < TOTAL_STUDENTS; i += BATCH_SIZE) {
       const studentsBatch = [];
 
-      // 👉 STEP 1: Prepare students
+      //  STEP 1: Prepare students
       for (let j = 0; j < BATCH_SIZE && i + j < TOTAL_STUDENTS; j++) {
         const school =
           schools[Math.floor(Math.random() * schools.length)];

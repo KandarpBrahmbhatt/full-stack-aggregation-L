@@ -1,67 +1,60 @@
-
-// import { useEffect } from 'react'
-// import { useState } from 'react'
-// import { useNavigate } from 'react-router-dom'
-// import { fetchClasses } from '../api/api'
-// import ClassList from '../components/ClassList'
-// import Loader from '../components/Loadar'
+// import { useEffect, useState } from "react";
+// import { fetchClasses } from "../api/api";
+// import { useSearchParams, useNavigate } from "react-router-dom";
+// import Loader from "../components/Loadar";
 
 // const ClassPage = () => {
-//     const [classes,setclasses] = useState([])
-//     const [loading,setLoading] = useState(true)
-//     const [branchName,setbranchName] = useState([])
-//     const [schoolName,setSchoolName] = useState([])
-//     const [standard,setStandard] = useState([])
-//     const navigate = useNavigate()
+//   const [data, setData] = useState([]);
+//   const [loading, setLoading] = useState(true);
 
-//     const getStudentClassMarks = async()=>{
-//         try {
-//             const markRes = await fetchClasses("")
-//             console.log(markRes)
-//             // setclasses(markRes.data.data)
-//             setSchoolName(markRes.data.schoolName)
-//             setbranchName(markRes.data.branchName)
-//             setStandard(markRes.standard)
-//         } catch (error) {
-//             console.log(error)
-//         }finally{
-//             setLoading(false)
-//         }
+//   const [params] = useSearchParams();
+//   const schoolName = params.get("schoolName");
+//   const branchName = params.get("branchName");
+//   const standard = params.get("standard");
+
+//   const navigate = useNavigate();
+
+//   const loadData = async () => {
+//     try {
+//       const res = await fetchClasses(schoolName, branchName, standard);
+//       setData(res.data.data);
+//     } catch (err) {
+//       console.error(err);
+//     } finally {
+//       setLoading(false);
 //     }
+//   };
 
-//     // Load all branches on mount
-//       useEffect(() => {
-//         // Use async IIFE to avoid direct setState in effect
-//         (async () => {
-//           await getStudentClassMarks()
-//         })();
-//       }, []);
-
-//     const handleGoBack = ()=>{
-//         navigate("/branch")
+//   useEffect(() => {
+//     if (schoolName && branchName && standard) {
+//       loadData();
 //     }
+//   }, [schoolName, branchName, standard]);
+
 //   return (
-//     <>
-//       <div className="container">
-//         <button id='switch' onClick={handleGoBack}>back to branch</button>
+//     <div className="container">
+//       <button onClick={() => navigate(-1)}>Back</button>
 
-//         <h1>All standard students</h1>
+//       <h2>
+//         {schoolName} | {branchName} | Class {standard}
+//       </h2>
 
-//          {loading ? (  
+//       {loading ? (
 //         <Loader />
-//       ) : classes.length > 0 ? (
-//         <ClassList data={classes} />
 //       ) : (
-//         <p style={{ textAlign: "center", color: "red" }}>
-//           No students found
-//         </p>
+//         <div>
+//           {data.map((item, i) => (
+//             <div key={i} className="card">
+//               {item.studentName} - {item.marks}
+//             </div>
+//           ))}
+//         </div>
 //       )}
-//       </div>
-//     </>
-//   )
-// }
+//     </div>
+//   );
+// };
 
-// export default ClassPage
+// export default ClassPage;
 
 import { useEffect, useState } from "react";
 import { fetchClasses } from "../api/api";
@@ -98,7 +91,7 @@ const ClassPage = () => {
 
   return (
     <div className="container">
-      <button onClick={() => navigate(-1)}>Back</button>
+      <button onClick={() => navigate(-1)}>⬅ Back</button>
 
       <h2>
         {schoolName} | {branchName} | Class {standard}
@@ -106,11 +99,29 @@ const ClassPage = () => {
 
       {loading ? (
         <Loader />
+      ) : data.length === 0 ? (
+        <p style={{ color: "red" }}>No students found</p>
       ) : (
-        <div>
-          {data.map((item, i) => (
+        <div className="grid">
+          {data.map((student, i) => (
             <div key={i} className="card">
-              {item.studentName} - {item.marks}
+              <h3>{student.studentName}</h3>
+
+              <p>
+                {student.class} | {student.branch}
+              </p>
+
+              {/* 🔹 SUBJECTS */}
+              <div className="subjects">
+                {student.subjects?.map((sub, index) => (
+                  <div key={index} className="subject">
+                    {sub.subject}: {sub.marks}
+                  </div>
+                ))}
+              </div>
+
+              {/* 🔹 TOTAL */}
+              <h4>Total: {student.totalMarks}</h4>
             </div>
           ))}
         </div>
